@@ -13,6 +13,7 @@ from app.util.log import logger
 
 class GoogleBooksVolume(TypedDict, total=False):
     """Simplified Google Books Volume object."""
+
     id: str
     title: str
     authors: list[str]
@@ -25,6 +26,7 @@ class GoogleBooksVolume(TypedDict, total=False):
 
 class GoogleBooksSearchResult(BaseModel):
     """Response model for Google Books search."""
+
     id: str
     title: str
     authors: list[str]
@@ -170,9 +172,7 @@ async def get_google_books_by_isbn(
             item = items[0]
             volume_info = item.get("volumeInfo", {})
 
-            isbn_10, isbn_13 = _extract_isbn(
-                volume_info.get("industryIdentifiers", [])
-            )
+            isbn_10, isbn_13 = _extract_isbn(volume_info.get("industryIdentifiers", []))
 
             return GoogleBooksSearchResult(
                 id=item.get("id", ""),

@@ -13,6 +13,7 @@ from app.util.log import logger
 
 class OpenLibraryDoc(TypedDict, total=False):
     """Simplified OpenLibrary search result document."""
+
     key: str
     title: str
     author_name: list[str]
@@ -24,6 +25,7 @@ class OpenLibraryDoc(TypedDict, total=False):
 
 class OpenLibrarySearchResult(BaseModel):
     """Response model for OpenLibrary search."""
+
     key: str
     title: str
     authors: list[str]

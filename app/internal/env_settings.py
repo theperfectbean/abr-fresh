@@ -36,6 +36,9 @@ class ApplicationSettings(BaseModel):
     init_root_username: str = ""
     init_root_password: str = ""
 
+    enable_dto_cache: bool = True
+    """Enable DTO-based caching (experimental feature flag)"""
+
     def get_force_login_type(self) -> LoginTypeEnum | None:
         if self.force_login_type.strip():
             try:

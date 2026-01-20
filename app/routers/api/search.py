@@ -2,8 +2,7 @@ from typing import Annotated
 
 from aiohttp import ClientSession
 from fastapi import APIRouter, Depends, HTTPException, Query, Security
-from sqlalchemy.orm import selectinload
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.internal import book_search
 from app.internal.auth.authentication import APIKeyAuth, DetailedUser
@@ -15,9 +14,11 @@ from app.internal.book_search import (
     hybrid_search,
     list_audible_books,
 )
-from app.internal.models import Audiobook, AudiobookSearchResult
+from app.internal.models import AudiobookSearchResult
+from app.internal.repositories import AudiobookRequestRepository
 from app.util.connection import get_connection
 from app.util.db import get_session
+from app.util.log import logger
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -39,7 +40,7 @@ async def search_books(
         raise HTTPException(status_code=400, detail="Invalid region")
     if query:
         clear_old_book_caches(session)
-        
+
         # Use hybrid search (Audible + Google Books) or Audible-only
         if use_hybrid:
             results = await hybrid_search(
@@ -65,32 +66,31 @@ async def search_books(
         results = []
 
     # Convert results to include requests info
-    response_results = []
+    response_results: list[AudiobookSearchResult] = []
+    request_repo = AudiobookRequestRepository(session)
+
     for book in results:
-        # If book has requests relationship loaded, use it; otherwise, query separately
+        # Get requests for this book from the ORM relationship if available
+        requests_list = []  # type: ignore[var-annotated]
         try:
-            if hasattr(book, "requests") and book.requests is not None:
+            if hasattr(book, "requests") and book.requests:
                 requests_list = book.requests
             else:
-                # For books that aren't from the database session (e.g., from Google Books),
-                # try to find them by ASIN and get their requests
-                if book.asin:
-                    existing = session.exec(
-                        select(Audiobook)
-                        .where(Audiobook.asin == book.asin)
-                        .options(selectinload(Audiobook.requests))
-                    ).first()
-                    requests_list = existing.requests if existing else []
-                else:
-                    requests_list = []
-        except Exception:
-            # If anything fails (deleted object, session issues), default to empty list
+                # Query for requests if not available
+                requests_list = request_repo.get_all_for_audiobook(book.id)
+        except Exception as e:
+            logger.debug(
+                "Could not load requests for book",
+                book_id=book.id,
+                asin=book.asin,
+                error=str(e),
+            )
             requests_list = []
 
         response_results.append(
             AudiobookSearchResult(
                 book=book,
-                requests=requests_list,
+                requests=requests_list,  # type: ignore[arg-type]
                 username=user.username,
             )
         )

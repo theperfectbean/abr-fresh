@@ -85,7 +85,9 @@ class Audiobook(BaseSQLModel, table=True):
     isbn_10: str | None = Field(default=None, index=True)
     isbn_13: str | None = Field(default=None, index=True)
     google_books_id: str | None = Field(default=None)
-    source: str = Field(default="audible")  # audible | google_books | openlibrary | prowlarr | manual
+    source: str = Field(
+        default="audible"
+    )  # audible | google_books | openlibrary | prowlarr | manual
 
     updated_at: datetime = Field(
         default_factory=datetime.now,

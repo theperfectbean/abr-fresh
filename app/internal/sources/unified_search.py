@@ -95,16 +95,12 @@ async def deduplicate_by_isbn(
                 isbn13_map[book.isbn_13] = book
             else:
                 # Merge metadata
-                isbn13_map[book.isbn_13] = _merge_books(
-                    isbn13_map[book.isbn_13], book
-                )
+                isbn13_map[book.isbn_13] = _merge_books(isbn13_map[book.isbn_13], book)
         elif book.isbn_10:
             if book.isbn_10 not in isbn10_map:
                 isbn10_map[book.isbn_10] = book
             else:
-                isbn10_map[book.isbn_10] = _merge_books(
-                    isbn10_map[book.isbn_10], book
-                )
+                isbn10_map[book.isbn_10] = _merge_books(isbn10_map[book.isbn_10], book)
 
     # Process OpenLibrary results (lowest priority)
     for book in openlibrary_results:
@@ -203,8 +199,7 @@ async def unified_search(
                 max_results=num_results,
             )
             google_results = [
-                google_books_result_to_audiobook(r)
-                for r in google_search_results
+                google_books_result_to_audiobook(r) for r in google_search_results
             ]
         except Exception as e:
             logger.error("Google Books search failed", query=query, error=str(e))
@@ -217,8 +212,7 @@ async def unified_search(
                 max_results=num_results,
             )
             openlibrary_results = [
-                openlibrary_result_to_audiobook(r)
-                for r in openlibrary_search_results
+                openlibrary_result_to_audiobook(r) for r in openlibrary_search_results
             ]
         except Exception as e:
             logger.error("OpenLibrary search failed", query=query, error=str(e))
@@ -283,14 +277,14 @@ async def search_author_books(
             from app.internal.sources.google_books_api import (
                 search_google_books_by_author,
             )
+
             google_search_results = await search_google_books_by_author(
                 client_session,
                 author_name,
                 max_results=num_results,
             )
             google_results = [
-                google_books_result_to_audiobook(r)
-                for r in google_search_results
+                google_books_result_to_audiobook(r) for r in google_search_results
             ]
         except Exception as e:
             logger.error(
@@ -304,14 +298,14 @@ async def search_author_books(
             from app.internal.sources.openlibrary_api import (
                 search_openlibrary_by_author,
             )
+
             openlibrary_search_results = await search_openlibrary_by_author(
                 client_session,
                 author_name,
                 max_results=num_results,
             )
             openlibrary_results = [
-                openlibrary_result_to_audiobook(r)
-                for r in openlibrary_search_results
+                openlibrary_result_to_audiobook(r) for r in openlibrary_search_results
             ]
         except Exception as e:
             logger.error(

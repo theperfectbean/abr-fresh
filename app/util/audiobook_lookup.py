@@ -10,9 +10,7 @@ from app.internal.models import Audiobook
 
 async def get_audiobook_by_asin(session: Session, asin: str) -> Audiobook | None:
     """Lookup audiobook by ASIN (for backward compatibility)."""
-    return session.exec(
-        select(Audiobook).where(col(Audiobook.asin) == asin)
-    ).first()
+    return session.exec(select(Audiobook).where(col(Audiobook.asin) == asin)).first()
 
 
 def get_audiobook_by_id(session: Session, audiobook_id: uuid.UUID) -> Audiobook | None:
