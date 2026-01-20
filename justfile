@@ -12,7 +12,10 @@ create_revision *MESSAGE:
     uv run alembic revision --autogenerate -m "{{MESSAGE}}"
 
 dev: migrate
-    uv run fastapi dev
+    uv run fastapi dev --host 0.0.0.0
+
+prod: migrate
+    uv run uvicorn app.main:app --host 0.0.0.0 --port 9000
 
 install_daisy:
     curl -sLo static/daisyui.mjs https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.mjs
