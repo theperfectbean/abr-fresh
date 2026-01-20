@@ -60,10 +60,10 @@ AudioBookRequest is intended to be deployed using Docker or Kubernetes. For "bar
 Run the image directly:
 
 ```bash
-docker run -p 8000:8000 -v $(pwd)/config:/config markbeep/audiobookrequest:1
+docker run -p 8000:9000 -v $(pwd)/config:/config markbeep/audiobookrequest:1
 ```
 
-Then head to http://localhost:8000.
+Then head to http://localhost:9000.
 
 **NOTE:** AudioBookRequest uses the `/config` directory inside the container for storing configs and data. Mount that directory locally somewhere to ensure persistent data across restarts.
 
@@ -181,7 +181,7 @@ just dev # or simply 'just d'
 uv run fastapi dev
 ```
 
-Website can be visited at http://localhost:8000.
+Website can be visited at http://localhost:9000.
 
 2. Tailwind is used in combination with [DaisyUI](https://daisyui.com). Download the source files using the following commands:
 

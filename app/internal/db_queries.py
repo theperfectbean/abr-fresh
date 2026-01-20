@@ -79,8 +79,8 @@ def get_wishlist_results(
         select(Audiobook)
         .where(
             clause,
-            col(Audiobook.asin).in_(
-                select(AudiobookRequest.asin).where(
+            col(Audiobook.id).in_(
+                select(AudiobookRequest.audiobook_id).where(
                     not username or AudiobookRequest.user_username == username
                 )
             ),

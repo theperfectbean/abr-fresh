@@ -65,14 +65,28 @@ class User(BaseSQLModel, table=True):
 class Audiobook(BaseSQLModel, table=True):
     """A cached Audible audiobook result. Used for both the search results and also linked to via a foreign key for requests."""
 
-    asin: str = Field(primary_key=True)
+    # New primary key (UUID)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+    # Required fields
     title: str
-    subtitle: str | None
+
+    # ASIN is now optional (for non-Audible books) and unique
+    asin: str | None = Field(default=None, index=True, unique=True)
+
+    subtitle: str | None = None
     authors: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     narrators: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-    cover_image: str | None
-    release_date: datetime
-    runtime_length_min: int
+    cover_image: str | None = None
+    release_date: datetime | None = None  # Optional for books without release dates
+    runtime_length_min: int | None = None  # Optional for non-Audible books
+
+    # Alternative identifiers for hybrid search
+    isbn_10: str | None = Field(default=None, index=True)
+    isbn_13: str | None = Field(default=None, index=True)
+    google_books_id: str | None = Field(default=None)
+    source: str = Field(default="audible")  # audible | google_books | openlibrary | prowlarr | manual
+
     updated_at: datetime = Field(
         default_factory=datetime.now,
         sa_column=Column(
@@ -92,13 +106,15 @@ class Audiobook(BaseSQLModel, table=True):
 
     @property
     def runtime_length_hrs(self):
+        if self.runtime_length_min is None:
+            return None
         return round(self.runtime_length_min / 60, 1)
 
 
 class AudiobookRequest(BaseSQLModel, table=True):
-    asin: str = Field(
+    audiobook_id: uuid.UUID = Field(
         primary_key=True,
-        foreign_key="audiobook.asin",
+        foreign_key="audiobook.id",
         ondelete="CASCADE",
     )
     user_username: str = Field(

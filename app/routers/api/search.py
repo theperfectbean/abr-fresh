@@ -11,6 +11,7 @@ from app.internal.book_search import (
     audible_regions,
     clear_old_book_caches,
     get_region_from_settings,
+    hybrid_search,
     list_audible_books,
 )
 from app.internal.models import AudiobookSearchResult
@@ -29,6 +30,7 @@ async def search_books(
     num_results: int = 20,
     page: int = 0,
     region: audible_region_type | None = None,
+    use_hybrid: bool = True,  # Enable hybrid search by default
 ):
     if region is None:
         region = get_region_from_settings()
@@ -36,14 +38,28 @@ async def search_books(
         raise HTTPException(status_code=400, detail="Invalid region")
     if query:
         clear_old_book_caches(session)
-        results = await list_audible_books(
-            session=session,
-            client_session=client_session,
-            query=query,
-            num_results=num_results,
-            page=page,
-            audible_region=region,
-        )
+        
+        # Use hybrid search (Audible + Google Books) or Audible-only
+        if use_hybrid:
+            results = await hybrid_search(
+                session=session,
+                client_session=client_session,
+                query=query,
+                region=region,
+                num_results=num_results,
+            )
+            # Apply pagination
+            start = page * num_results
+            results = results[start : start + num_results]
+        else:
+            results = await list_audible_books(
+                session=session,
+                client_session=client_session,
+                query=query,
+                num_results=num_results,
+                page=page,
+                audible_region=region,
+            )
     else:
         results = []
 

@@ -53,7 +53,7 @@ async def read_search(
     session: Annotated[Session, Depends(get_session)],
     user: Annotated[DetailedUser, Security(ABRAuth())],
     query: Annotated[str | None, Query(alias="q")] = None,
-    num_results: int = 20,
+    num_results: int = 30,
     page: int = 0,
     region: audible_region_type | None = None,
 ):
@@ -121,7 +121,7 @@ async def add_request(
     page: Annotated[int, Form()],
     region: Annotated[audible_region_type, Form()],
     user: Annotated[DetailedUser, Security(ABRAuth())],
-    num_results: Annotated[int, Form()] = 20,
+    num_results: Annotated[int, Form()] = 30,
 ):
     try:
         await create_request(
