@@ -657,22 +657,25 @@ async def hybrid_search(
     
     # Step 3: Combine and deduplicate results
     all_results = audible_results + found_via_google
-    
-    seen_asins: set[str] = set()
+
+    seen_asins: set[str | None] = set()
     unique_results: list[Audiobook] = []
-    
+
     for book in all_results:
-        if book.asin not in seen_asins:
-            seen_asins.add(book.asin)
+        # Use ASIN for deduplication if available, otherwise use UUID
+        dedup_key = book.asin if book.asin else str(book.id)
+
+        if dedup_key not in seen_asins:
+            seen_asins.add(dedup_key)
             unique_results.append(book)
-    
+
     logger.info(
         "Hybrid search complete",
         total_results=len(unique_results),
         audible_results=len(audible_results),
         google_books_results=len(found_via_google),
     )
-    
+
     return unique_results[:num_results]
 
 

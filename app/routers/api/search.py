@@ -63,14 +63,32 @@ async def search_books(
     else:
         results = []
 
-    return [
-        AudiobookSearchResult(
-            book=book,
-            requests=book.requests,
-            username=user.username,
+    # Convert results to include requests info
+    response_results = []
+    for book in results:
+        # If book has requests relationship loaded, use it; otherwise, query separately
+        if hasattr(book, "requests") and book.requests is not None:
+            requests_list = book.requests
+        else:
+            # For books that aren't from the database session (e.g., from Google Books),
+            # try to find them by ASIN and get their requests
+            if book.asin:
+                existing = session.exec(
+                    select(Audiobook).where(Audiobook.asin == book.asin)
+                ).first()
+                requests_list = existing.requests if existing else []
+            else:
+                requests_list = []
+
+        response_results.append(
+            AudiobookSearchResult(
+                book=book,
+                requests=requests_list,
+                username=user.username,
+            )
         )
-        for book in results
-    ]
+
+    return response_results
 
 
 @router.get("/suggestions", response_model=list[str])
