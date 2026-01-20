@@ -2,7 +2,8 @@ from typing import Annotated
 
 from aiohttp import ClientSession
 from fastapi import APIRouter, Depends, HTTPException, Query, Security
-from sqlmodel import Session
+from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select
 
 from app.internal import book_search
 from app.internal.auth.authentication import APIKeyAuth, DetailedUser
@@ -14,7 +15,7 @@ from app.internal.book_search import (
     hybrid_search,
     list_audible_books,
 )
-from app.internal.models import AudiobookSearchResult
+from app.internal.models import Audiobook, AudiobookSearchResult
 from app.util.connection import get_connection
 from app.util.db import get_session
 
@@ -67,18 +68,24 @@ async def search_books(
     response_results = []
     for book in results:
         # If book has requests relationship loaded, use it; otherwise, query separately
-        if hasattr(book, "requests") and book.requests is not None:
-            requests_list = book.requests
-        else:
-            # For books that aren't from the database session (e.g., from Google Books),
-            # try to find them by ASIN and get their requests
-            if book.asin:
-                existing = session.exec(
-                    select(Audiobook).where(Audiobook.asin == book.asin)
-                ).first()
-                requests_list = existing.requests if existing else []
+        try:
+            if hasattr(book, "requests") and book.requests is not None:
+                requests_list = book.requests
             else:
-                requests_list = []
+                # For books that aren't from the database session (e.g., from Google Books),
+                # try to find them by ASIN and get their requests
+                if book.asin:
+                    existing = session.exec(
+                        select(Audiobook)
+                        .where(Audiobook.asin == book.asin)
+                        .options(selectinload(Audiobook.requests))
+                    ).first()
+                    requests_list = existing.requests if existing else []
+                else:
+                    requests_list = []
+        except Exception:
+            # If anything fails (deleted object, session issues), default to empty list
+            requests_list = []
 
         response_results.append(
             AudiobookSearchResult(
