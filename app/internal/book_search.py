@@ -725,17 +725,39 @@ async def hybrid_search(
     # Step 3: Search local database for matching books
     # This catches books that are in our DB but not in Audible's API results
     logger.debug("Searching local database", query=query)
-    db_results = list(
-        session.exec(
-            select(Audiobook)
-            .where(
-                (Audiobook.title.contains(query))
-                | (Audiobook.subtitle.contains(query))
-                | (Audiobook.authors.contains(query))
-            )
-            .limit(20)
-        ).all()
-    )
+    
+    # Use case-insensitive search with ilike
+    # Split query into words to handle middle initials (e.g., "Bart D. Ehrman")
+    query_words = query.lower().split()
+    
+    # Build WHERE clause: all words must match (in title, subtitle, or authors)
+    where_conditions = []
+    for word in query_words:
+        word_pattern = f"%{word}%"
+        where_conditions.append(
+            (Audiobook.title.ilike(word_pattern))
+            | (Audiobook.subtitle.ilike(word_pattern))
+            | (Audiobook.authors.ilike(word_pattern))
+        )
+    
+    # Combine all conditions with AND
+    if where_conditions:
+        combined_where = where_conditions[0]
+        for condition in where_conditions[1:]:
+            combined_where = combined_where & condition
+        
+        # Get more results from local DB (will be deduplicated later)
+        # Sort by updated_at desc to get more recent books first
+        db_results = list(
+            session.exec(
+                select(Audiobook)
+                .where(combined_where)
+                .order_by(Audiobook.updated_at.desc())
+                .limit(50)
+            ).all()
+        )
+    else:
+        db_results = []
     
     # Eagerly load attributes for DB results
     from sqlalchemy.orm import make_transient, selectinload
